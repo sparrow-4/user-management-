@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Management System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        input, button {
+            padding: 8px;
+            margin: 5px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        .btn-edit, .btn-delete {
+            margin: 0 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .btn-edit { background-color: #4CAF50; color: white; }
+        .btn-delete { background-color: #f44336; color: white; }
+    </style>
+</head>
+<body>
+    <h1>User Management System</h1>
+    
+    <div id="userForm">
+        <div class="form-group">
+            <input type="hidden" id="userId">
+            <input type="text" id="name" placeholder="Name">
+        </div>
+        <div class="form-group">
+            <input type="email" id="email" placeholder="Email">
+        </div>
+        <button onclick="saveUser()">Save User</button>
+    </div>
+
+    <table id="userTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="userTableBody"></tbody>
+    </table>
+
+    <script>
+        let users = [];
+        const API_URL = 'http://localhost:3000/users';
+
+        async function saveUser() {
+            const userId = document.getElementById('userId').value;
+            const user = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value
+            };
+
+            const url = userId ? `${API_URL}/${userId}` : API_URL;
+            const method = userId ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(user)
+                });
+                
+                if (response.ok) {
+                    clearForm();
+                    loadUsers();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const response = await fetch(API_URL);
+                users = await response.json();
+                displayUsers();
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function deleteUser(id) {
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    loadUsers();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function editUser(id) {
+            const user = users.find(u => u.id === id);
+            if (user) {
+                document.getElementById('userId').value = user.id;
+                document.getElementById('name').value = user.name;
+                document.getElementById('email').value = user.email;
+            }
+        }
+
+        function displayUsers() {
+            const tbody = document.getElementById('userTableBody');
+            tbody.innerHTML = '';
+            
+            users.forEach(user => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${user.name}</td>
+                    <td>${user.email}</td>
+                    <td>
+                        <button class="btn-edit" onclick="editUser(${user.id})">Edit</button>
+                        <button class="btn-delete" onclick="deleteUser(${user.id})">Delete</button>
+                    </td>
+                `;
+            });
+        }
+
+        function clearForm() {
+            document.getElementById('userId').value = '';
+            document.getElementById('name').value = '';
+            document.getElementById('email').value = '';
+        }
+
+        loadUsers();
+    </script>
+</body>
+</html>
